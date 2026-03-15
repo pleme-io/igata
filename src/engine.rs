@@ -138,34 +138,25 @@ impl Engine {
     fn render_manifest_entry(
         &self,
         renderer: &Box<dyn TemplateRenderer>,
-        _name: &str,
+        name: &str,
         entry: &crate::manifest::TemplateEntry,
     ) -> Result<()> {
-        let content = self.loader.load(&entry.source)?;
+        let content = self.loader.load(&entry.source).map_err(|e| {
+            eprintln!("[igata] failed to load template '{name}': {e}");
+            e
+        })?;
         let ctx_resolver = Self::build_context_resolver(&entry.context);
-        let variables = ctx_resolver.resolve_all()?;
+        let variables = ctx_resolver.resolve_all().map_err(|e| {
+            eprintln!("[igata] failed to resolve context for '{name}': {e}");
+            e
+        })?;
         let rendered = renderer.render(&content, &variables)?;
         let mode = parse_mode(&entry.mode);
         self.writer.write(&entry.target, &rendered, mode)
     }
 
     fn resolve_context(ctx: &Context) -> Result<BTreeMap<String, String>> {
-        let mut resolver = MapContextResolver::new();
-        for (name, source) in &ctx.variables {
-            let var_resolver: Box<dyn crate::traits::VariableResolver> = match source {
-                Source::Literal { value } => Box::new(LiteralResolver {
-                    value: value.clone(),
-                }),
-                Source::File { path } => Box::new(FileResolver {
-                    path: path.clone(),
-                }),
-                Source::Env { name } => Box::new(EnvResolver {
-                    name: name.clone(),
-                }),
-            };
-            resolver.insert(name, var_resolver);
-        }
-        resolver.resolve_all()
+        Self::build_context_resolver(ctx).resolve_all()
     }
 
     fn build_context_resolver(ctx: &Context) -> MapContextResolver {

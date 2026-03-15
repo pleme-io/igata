@@ -5,10 +5,12 @@ use crate::traits::{
     ContextResolver, ManifestLoader, OutputWriter, RenderObserver, TemplateLoader,
     TemplateRenderer, VariableResolver,
 };
+use minijinja::syntax::SyntaxConfig;
 use minijinja::Environment;
 use std::collections::BTreeMap;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+use std::sync::OnceLock;
 
 // ── Variable resolvers ─────────────────────────────────────────────────
 
@@ -98,15 +100,32 @@ impl ContextResolver for MapContextResolver {
 // ── Template renderer ──────────────────────────────────────────────────
 
 /// MiniJinja-backed template renderer.
+///
+/// Caches the `SyntaxConfig` so it is computed (and leaked) only once,
+/// regardless of how many times `render` is called.
 #[derive(Debug)]
 pub struct MiniJinjaRenderer {
     syntax: Syntax,
+    cached_config: OnceLock<SyntaxConfig>,
 }
 
 impl MiniJinjaRenderer {
     #[must_use]
     pub fn new(syntax: Syntax) -> Self {
-        Self { syntax }
+        Self {
+            syntax,
+            cached_config: OnceLock::new(),
+        }
+    }
+
+    fn syntax_config(&self) -> Result<&SyntaxConfig> {
+        if let Some(config) = self.cached_config.get() {
+            return Ok(config);
+        }
+        let config = self.syntax.to_config()?;
+        // If another thread raced us, that's fine — we just discard ours.
+        let _ = self.cached_config.set(config);
+        Ok(self.cached_config.get().expect("just set"))
     }
 }
 
@@ -118,8 +137,9 @@ impl Default for MiniJinjaRenderer {
 
 impl TemplateRenderer for MiniJinjaRenderer {
     fn render(&self, template: &str, variables: &BTreeMap<String, String>) -> Result<String> {
+        let config = self.syntax_config()?;
         let mut env = Environment::new();
-        env.set_syntax(self.syntax.to_config()?);
+        env.set_syntax(config.clone());
         let tmpl = env.template_from_str(template)?;
         Ok(tmpl.render(variables)?)
     }

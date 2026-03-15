@@ -109,6 +109,10 @@ fn parse_vars(vars: &[String]) -> anyhow::Result<Context> {
             .split_once('=')
             .ok_or_else(|| anyhow::anyhow!("invalid var format: {var} (expected NAME=VALUE, NAME=@PATH, or NAME=$ENV)"))?;
 
+        if name.is_empty() {
+            anyhow::bail!("empty variable name in '{var}' (expected NAME=VALUE, not =VALUE)");
+        }
+
         if let Some(path) = value.strip_prefix('@') {
             builder = builder.file(name, path);
         } else if let Some(env_name) = value.strip_prefix('$') {

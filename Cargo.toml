@@ -9,7 +9,7 @@ authors = ["Pleme Team <team@pleme.io>"]
 repository = "https://github.com/pleme-io/igata"
 homepage = "https://github.com/pleme-io/igata"
 keywords = ["template", "nix", "config", "secrets"]
-categories = ["template-engine", "config", "command-line-utilities"]
+categories = ["development-tools", "config", "command-line-utilities"]
 exclude = ["module/", "target/", "result-*", "Cargo.nix", "flake.nix", "flake.lock"]
 
 [lib]

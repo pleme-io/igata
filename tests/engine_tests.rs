@@ -442,6 +442,42 @@ fn source_env_serde() {
     assert!(json.contains("\"type\":\"env\""));
 }
 
+// ── Edge cases ────────────────────────────────────────────────────────
+
+#[test]
+fn context_from_empty_variable_name() {
+    // An empty string key is just a valid BTreeMap key.
+    let ctx = Context::from([("", "value")]);
+    let resolved = ctx.resolve().unwrap();
+    assert_eq!(resolved[""], "value");
+}
+
+#[test]
+fn template_with_nix_heredoc_syntax_passthrough() {
+    // Nix heredoc '' delimiters must pass through untouched.
+    let engine = Engine::new();
+    let template = "script = ''\n  echo hello\n''";
+    let result = engine.render_str(template, &Context::new()).unwrap();
+    assert_eq!(result, "script = ''\n  echo hello\n''");
+}
+
+#[test]
+fn multiple_renders_no_state_leak() {
+    let engine = Engine::new();
+
+    let ctx1 = Context::from([("x", "first")]);
+    let r1 = engine.render_str("[= x =]", &ctx1).unwrap();
+    assert_eq!(r1, "first");
+
+    let ctx2 = Context::from([("x", "second")]);
+    let r2 = engine.render_str("[= x =]", &ctx2).unwrap();
+    assert_eq!(r2, "second");
+
+    // Render with no variables — previous context must not bleed through.
+    let r3 = engine.render_str("[= x =]", &Context::new()).unwrap();
+    assert_eq!(r3, "");
+}
+
 // ── Error quality ──────────────────────────────────────────────────────
 
 #[test]

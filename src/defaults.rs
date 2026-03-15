@@ -127,6 +127,14 @@ impl MiniJinjaRenderer {
         let _ = self.cached_config.set(config);
         Ok(self.cached_config.get().expect("just set"))
     }
+
+    /// Eagerly validate syntax by building and caching the config.
+    /// Call this once at construction time to surface config errors early
+    /// without leaking strings a second time via `Syntax::to_config()`.
+    pub fn validate(&self) -> Result<()> {
+        self.syntax_config()?;
+        Ok(())
+    }
 }
 
 impl Default for MiniJinjaRenderer {

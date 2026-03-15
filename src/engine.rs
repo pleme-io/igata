@@ -68,9 +68,11 @@ impl Engine {
 
     /// Create an engine with custom syntax.
     pub fn with_syntax(syntax: Syntax) -> Result<Self> {
-        syntax.to_config()?; // validate eagerly
+        let renderer = MiniJinjaRenderer::new(syntax);
+        // Validate by building and caching the SyntaxConfig (no double-leak).
+        renderer.validate()?;
         Ok(Self {
-            renderer: Box::new(MiniJinjaRenderer::new(syntax)),
+            renderer: Box::new(renderer),
             loader: Box::new(FsTemplateLoader),
             writer: Box::new(FsOutputWriter),
             observer: Box::new(StderrObserver),

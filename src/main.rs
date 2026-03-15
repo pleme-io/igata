@@ -75,7 +75,11 @@ fn main() -> anyhow::Result<()> {
 
             if let Some(out) = output {
                 let mode_int = u32::from_str_radix(&mode, 8).unwrap_or(0o600);
-                engine.render_to_file(&template, &out, &ctx, mode_int)?;
+                // Write the already-rendered string directly, don't re-render
+                std::fs::write(&out, &rendered).map_err(|e| anyhow::anyhow!("failed to write {}: {e}", out.display()))?;
+                use std::os::unix::fs::PermissionsExt;
+                std::fs::set_permissions(&out, std::fs::Permissions::from_mode(mode_int))
+                    .map_err(|e| anyhow::anyhow!("failed to set permissions on {}: {e}", out.display()))?;
                 eprintln!("[igata] rendered → {}", out.display());
             } else {
                 print!("{rendered}");

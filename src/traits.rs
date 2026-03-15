@@ -73,6 +73,4 @@ pub trait RenderObserver: std::fmt::Debug + Send + Sync {
     /// Called when a rendering error occurs.
     fn on_render_error(&self, _name: &str, _error: &crate::error::Error) {}
 
-    /// Called when a variable is resolved.
-    fn on_variable_resolved(&self, _name: &str, _source_desc: &str) {}
 }

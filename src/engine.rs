@@ -109,8 +109,13 @@ impl Engine {
     }
 
     /// Render all templates in a manifest.
+    ///
+    /// Note: this intentionally uses the manifest's declared syntax (not the
+    /// engine's renderer) because manifest-driven rendering is self-describing
+    /// — the manifest specifies which delimiters its templates use.
     pub fn render_manifest(&self, manifest: &Manifest) -> Result<RenderReport> {
-        // Build a renderer with the manifest's syntax.
+        // Build a renderer with the manifest's syntax — intentionally overrides
+        // the engine's default renderer so manifests are self-describing.
         let renderer: Box<dyn TemplateRenderer> =
             Box::new(MiniJinjaRenderer::new(manifest.syntax.clone()));
 
@@ -120,7 +125,7 @@ impl Engine {
             self.observer
                 .on_render_start(name, &entry.source, &entry.target);
 
-            match self.render_manifest_entry(&renderer, name, entry) {
+            match self.render_manifest_entry(&*renderer, name, entry) {
                 Ok(()) => {
                     self.observer.on_render_complete(name, &entry.target);
                     report.rendered.push(name.clone());
@@ -137,7 +142,7 @@ impl Engine {
 
     fn render_manifest_entry(
         &self,
-        renderer: &Box<dyn TemplateRenderer>,
+        renderer: &dyn TemplateRenderer,
         name: &str,
         entry: &crate::manifest::TemplateEntry,
     ) -> Result<()> {

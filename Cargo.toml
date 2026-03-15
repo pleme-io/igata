@@ -1,0 +1,43 @@
+[package]
+name = "igata"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89.0"
+description = "Igata (鋳型) — general-purpose template engine for Nix activation-time rendering"
+license = "MIT"
+authors = ["Pleme Team <team@pleme.io>"]
+repository = "https://github.com/pleme-io/igata"
+homepage = "https://github.com/pleme-io/igata"
+keywords = ["template", "nix", "config", "secrets"]
+categories = ["template-engine", "config", "command-line-utilities"]
+exclude = ["module/", "target/", "result-*", "Cargo.nix", "flake.nix", "flake.lock"]
+
+[lib]
+name = "igata"
+path = "src/lib.rs"
+
+[[bin]]
+name = "igata"
+path = "src/main.rs"
+
+[dependencies]
+minijinja = { version = "2", features = ["custom_syntax"] }
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+anyhow = "1.0"
+thiserror = "2.0"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

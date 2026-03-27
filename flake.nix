@@ -1,58 +1,43 @@
 {
-  description = "Igata (鋳型) — general-purpose template engine for Nix activation-time rendering";
+  description = "igata — Nix-first machine image builder";
+
+  nixConfig = {
+    allow-import-from-derivation = true;
+  };
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    crate2nix.url = "github:nix-community/crate2nix";
+    flake-utils.url = "github:numtide/flake-utils";
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     substrate = {
       url = "github:pleme-io/substrate";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.fenix.follows = "fenix";
+    };
+    devenv = {
+      url = "github:cachix/devenv";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      substrate,
-      ...
-    }:
-    let
-      system = "aarch64-darwin";
-      pkgs = import nixpkgs { inherit system; };
-      package = pkgs.rustPlatform.buildRustPackage {
-        pname = "igata";
-        version = "0.1.0";
-        src = ./.;
-        useFetchCargoVendor = true;
-        cargoHash = "";
-        meta = {
-          description = "General-purpose template engine for Nix activation-time rendering";
-          homepage = "https://github.com/pleme-io/igata";
-          license = pkgs.lib.licenses.mit;
-        };
-      };
-    in
-    {
-      packages.${system}.default = package;
-
-      overlays.default = final: prev: {
-        igata = self.packages.${final.system}.default;
-      };
-
-      homeManagerModules.default = import ./module {
-        inherit (nixpkgs) lib;
-        inherit pkgs;
-      };
-
-      devShells.${system}.default = pkgs.mkShellNoCC {
-        buildInputs = [
-          pkgs.rustc
-          pkgs.cargo
-          pkgs.clippy
-          pkgs.rustfmt
-        ];
-      };
-
-      formatter.${system} = pkgs.nixfmt-tree;
+  outputs = {
+    self,
+    nixpkgs,
+    crate2nix,
+    flake-utils,
+    substrate,
+    devenv,
+    ...
+  }:
+    (import "${substrate}/lib/rust-tool-release-flake.nix" {
+      inherit nixpkgs crate2nix flake-utils devenv;
+    }) {
+      toolName = "pleme-igata";
+      src = self;
+      repo = "pleme-io/igata";
     };
 }

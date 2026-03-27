@@ -1,35 +1,55 @@
 [package]
-name = "igata"
+name = "pleme-igata"
 version = "0.1.0"
-edition = "2024"
-rust-version = "1.89.0"
-description = "Igata (鋳型) — general-purpose template engine for Nix activation-time rendering"
+edition = "2021"
+description = "Nix-first machine image builder — Packer-compatible JSON templates"
 license = "MIT"
 authors = ["Pleme Team <team@pleme.io>"]
 repository = "https://github.com/pleme-io/igata"
 homepage = "https://github.com/pleme-io/igata"
-keywords = ["template", "nix", "config", "secrets"]
-categories = ["development-tools", "config", "command-line-utilities"]
+keywords = ["packer", "image", "builder", "nix", "vm"]
+categories = ["development-tools", "command-line-utilities"]
 exclude = ["module/", "target/", "result-*", "Cargo.nix", "flake.nix", "flake.lock"]
-
-[lib]
-name = "igata"
-path = "src/lib.rs"
 
 [[bin]]
 name = "igata"
 path = "src/main.rs"
 
 [dependencies]
-minijinja = { version = "2", features = ["custom_syntax"] }
 clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
+serde_yaml_ng = "0.10"
 anyhow = "1.0"
 thiserror = "2.0"
+colored = "2.1"
+tokio = { version = "1.40", features = ["full"] }
+async-trait = "0.1"
+shikumi = { git = "https://github.com/pleme-io/shikumi" }
+regex = "1"
+uuid = { version = "1", features = ["v4"] }
+chrono = "0.4"
+dirs = "6.0"
+gtmpl = "0.7"
+gtmpl_value = "0.5"
 
-[dev-dependencies]
-tempfile = "3"
+# Communicators
+russh = "0.48"
+russh-keys = "0.48"
+ssh-key = "0.6"
+bollard = "0.18"
+futures-util = "0.3"
+
+# AWS
+aws-config = "1"
+aws-sdk-ec2 = "1"
+
+# Post-processors
+sha2 = "0.10"
+md-5 = "0.10"
+flate2 = "1"
+zip = "2"
+tar = "0.4"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }

@@ -1,130 +1,242 @@
+mod build;
+mod builder;
+mod communicator;
+mod config;
+mod display;
+mod error;
+mod inspect;
+mod interpolation;
+mod post_processor;
+mod provisioner;
+mod template;
+mod traits;
+mod validate;
+mod variable;
+
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use igata::{Context, Engine, Manifest, Syntax};
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "igata", about = "鋳型 — template engine for Nix activation-time rendering")]
+#[command(
+    name = "igata",
+    version,
+    about = "igata — Nix-first machine image builder (Packer-compatible)"
+)]
 struct Cli {
     #[command(subcommand)]
-    command: Command,
+    command: Commands,
 }
 
 #[derive(Subcommand)]
-enum Command {
-    /// Render templates from a JSON manifest (Nix integration).
-    Render {
-        /// Path to the manifest JSON file.
-        #[arg(long)]
-        manifest: PathBuf,
-    },
-
-    /// Render a single template file.
-    File {
-        /// Path to the template file.
-        #[arg(long)]
+enum Commands {
+    /// Build images from a Packer JSON template
+    Build {
+        /// Template file
         template: PathBuf,
 
-        /// Output path (stdout if omitted).
-        #[arg(long, short)]
-        output: Option<PathBuf>,
-
-        /// Variable: NAME=VALUE (literal) or NAME=@PATH (from file) or NAME=$ENV (from env).
+        /// Set a variable: key=value
         #[arg(long = "var", short = 'v')]
         vars: Vec<String>,
 
-        /// File permission mode (octal, default 0600).
-        #[arg(long, default_value = "0600")]
-        mode: String,
+        /// Variable file (JSON)
+        #[arg(long = "var-file")]
+        var_files: Vec<PathBuf>,
+
+        /// Build only the specified builders
+        #[arg(long)]
+        only: Vec<String>,
+
+        /// Skip the specified builders
+        #[arg(long)]
+        except: Vec<String>,
+
+        /// Force a build even if artifacts exist
+        #[arg(long)]
+        force: bool,
+
+        /// On-error behavior: cleanup, abort, or ask
+        #[arg(long, default_value = "cleanup")]
+        on_error: String,
+
+        /// Number of parallel builds
+        #[arg(long, default_value = "1")]
+        parallel_builds: usize,
+
+        /// Disable color output
+        #[arg(long)]
+        no_color: bool,
+
+        /// Machine-readable output
+        #[arg(long)]
+        machine_readable: bool,
+
+        /// Prefix output with timestamps
+        #[arg(long)]
+        timestamp_ui: bool,
     },
 
-    /// Validate a template without rendering.
-    Check {
-        /// Path to the template file.
-        #[arg(long)]
+    /// Validate a Packer JSON template
+    Validate {
+        /// Template file
         template: PathBuf,
 
-        /// Expected variable names (comma-separated).
-        #[arg(long)]
-        vars: Option<String>,
+        /// Set a variable: key=value
+        #[arg(long = "var", short = 'v')]
+        vars: Vec<String>,
+
+        /// Variable file (JSON)
+        #[arg(long = "var-file")]
+        var_files: Vec<PathBuf>,
     },
+
+    /// Display template summary
+    Inspect {
+        /// Template file
+        template: PathBuf,
+    },
+
+    /// Show version
+    Version,
 }
 
-fn main() -> anyhow::Result<()> {
+fn parse_cli_vars(vars: &[String]) -> Vec<(String, String)> {
+    vars.iter()
+        .filter_map(|v| {
+            v.split_once('=')
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+        })
+        .collect()
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Render { manifest } => {
-            let manifest = Manifest::load(&manifest)?;
-            let engine = Engine::with_syntax(manifest.syntax.clone())?;
-            let report = engine.render_manifest(&manifest)?;
-            eprintln!(
-                "[igata] rendered {} template(s)",
-                report.rendered.len()
+        Commands::Build {
+            template: template_path,
+            vars,
+            var_files,
+            only,
+            except,
+            force,
+            on_error,
+            parallel_builds,
+            no_color,
+            machine_readable,
+            timestamp_ui,
+        } => {
+            if no_color {
+                colored::control::set_override(false);
+            }
+
+            let tmpl = template::parse_file(&template_path)
+                .with_context(|| format!("parsing {}", template_path.display()))?;
+
+            // Validate first
+            let validation = validate::validate(&tmpl);
+            for err in &validation.errors {
+                display::print_validation_error(err);
+            }
+            for warn in &validation.warnings {
+                display::print_validation_warning(warn);
+            }
+            if !validation.is_ok() {
+                anyhow::bail!("template validation failed");
+            }
+
+            // Resolve variables
+            let cli_vars = parse_cli_vars(&vars);
+            let var_file_refs: Vec<&std::path::Path> =
+                var_files.iter().map(|p| p.as_path()).collect();
+            let variables =
+                variable::resolve(&tmpl.variables, &cli_vars, &var_file_refs)?;
+
+            // Build registry
+            let mut registry = traits::Registry::new();
+            builder::register_all(&mut registry);
+            provisioner::register_all(&mut registry);
+            post_processor::register_all(&mut registry);
+
+            // Load config
+            let cfg = config::load();
+
+            let template_dir = template_path
+                .parent()
+                .map(|p| p.to_string_lossy().to_string());
+
+            let opts = build::BuildOptions {
+                only,
+                except,
+                on_error: build::OnError::parse(&on_error)?,
+                parallel_builds,
+                force,
+                machine_readable,
+                timestamp_ui,
+                no_color,
+                template_dir,
+            };
+
+            let result = build::run(&tmpl, &variables, &registry, &cfg, &opts).await;
+
+            if !result.errors.is_empty() {
+                let count = result.errors.len();
+                anyhow::bail!("{count} build(s) failed");
+            }
+
+            println!(
+                "\n==> Builds finished. {} artifact(s) produced.",
+                result.artifacts.len()
             );
         }
 
-        Command::File {
-            template,
-            output,
+        Commands::Validate {
+            template: template_path,
             vars,
-            mode,
+            var_files,
         } => {
-            let ctx = parse_vars(&vars)?;
-            let engine = Engine::new();
-            let rendered = engine.render_file(&template, &ctx)?;
+            let tmpl = template::parse_file(&template_path)
+                .with_context(|| format!("parsing {}", template_path.display()))?;
 
-            if let Some(out) = output {
-                let mode_int = u32::from_str_radix(&mode, 8).unwrap_or(0o600);
-                // Write the already-rendered string directly, don't re-render
-                std::fs::write(&out, &rendered).map_err(|e| anyhow::anyhow!("failed to write {}: {e}", out.display()))?;
-                use std::os::unix::fs::PermissionsExt;
-                std::fs::set_permissions(&out, std::fs::Permissions::from_mode(mode_int))
-                    .map_err(|e| anyhow::anyhow!("failed to set permissions on {}: {e}", out.display()))?;
-                eprintln!("[igata] rendered → {}", out.display());
+            let validation = validate::validate(&tmpl);
+
+            for err in &validation.errors {
+                display::print_validation_error(err);
+            }
+            for warn in &validation.warnings {
+                display::print_validation_warning(warn);
+            }
+
+            // Also validate variables resolve
+            let cli_vars = parse_cli_vars(&vars);
+            let var_file_refs: Vec<&std::path::Path> =
+                var_files.iter().map(|p| p.as_path()).collect();
+            if let Err(e) = variable::resolve(&tmpl.variables, &cli_vars, &var_file_refs)
+            {
+                display::print_validation_error(&e.to_string());
+                anyhow::bail!("template validation failed");
+            }
+
+            if validation.is_ok() {
+                println!("Template validated successfully.");
             } else {
-                print!("{rendered}");
+                anyhow::bail!("template validation failed");
             }
         }
 
-        Command::Check { template, vars } => {
-            let content = std::fs::read_to_string(&template)?;
-            let syntax = Syntax::default();
-            let mut env = minijinja::Environment::new();
-            env.set_syntax(syntax.to_config()?);
-            // Parse without rendering — validates syntax only.
-            let _ = env.template_from_str(&content)?;
-            eprintln!("[igata] ✓ template valid: {}", template.display());
+        Commands::Inspect {
+            template: template_path,
+        } => {
+            let tmpl = template::parse_file(&template_path)
+                .with_context(|| format!("parsing {}", template_path.display()))?;
+            inspect::inspect(&tmpl);
+        }
 
-            if let Some(expected) = vars {
-                let names: Vec<&str> = expected.split(',').map(str::trim).collect();
-                eprintln!("[igata]   expected variables: {}", names.join(", "));
-            }
+        Commands::Version => {
+            println!("igata {}", env!("CARGO_PKG_VERSION"));
         }
     }
 
     Ok(())
-}
-
-fn parse_vars(vars: &[String]) -> anyhow::Result<Context> {
-    let mut builder = Context::builder();
-
-    for var in vars {
-        let (name, value) = var
-            .split_once('=')
-            .ok_or_else(|| anyhow::anyhow!("invalid var format: {var} (expected NAME=VALUE, NAME=@PATH, or NAME=$ENV)"))?;
-
-        if name.is_empty() {
-            anyhow::bail!("empty variable name in '{var}' (expected NAME=VALUE, not =VALUE)");
-        }
-
-        if let Some(path) = value.strip_prefix('@') {
-            builder = builder.file(name, path);
-        } else if let Some(env_name) = value.strip_prefix('$') {
-            builder = builder.env(name, env_name);
-        } else {
-            builder = builder.literal(name, value);
-        }
-    }
-
-    Ok(builder.build())
 }

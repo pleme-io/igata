@@ -1,6 +1,6 @@
 [package]
 name = "pleme-igata"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "Nix-first machine image builder — Packer-compatible JSON templates"
 license = "MIT"

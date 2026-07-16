@@ -319,6 +319,7 @@ mod tests {
         assert!(reg.create_builder("docker").is_some());
         assert!(reg.create_builder("qemu").is_some());
         assert!(reg.create_builder("amazon-ebs").is_some());
+        assert!(reg.create_builder("amazon-import").is_some());
 
         assert!(reg.create_provisioner("shell").is_some());
         assert!(reg.create_provisioner("file").is_some());

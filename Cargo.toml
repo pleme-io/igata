@@ -44,6 +44,15 @@ futures-util = "0.3"
 aws-config = "1"
 aws-sdk-ec2 = "1"
 
+# amazon-import builder: reuses ami-forge's own proven upload/import/tag/SSM
+# pipeline in-process rather than re-deriving it or shelling out. Path dep
+# against the sibling checkout (matches the fleet convention for real
+# cross-repo composition, e.g. camelot-fabric -> camelot-fabric-startup,
+# australis -> malha) — cargo build/test are offline-clean and byte-
+# reproducible today; publishing ami-forge with a fetchable git/crates.io
+# coordinate for igata's `nix build` is a follow-up, same as those siblings.
+ami-forge = { path = "../ami-forge" }
+
 # Post-processors
 sha2 = "0.10"
 md-5 = "0.10"

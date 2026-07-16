@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use crate::builder::{get_str, get_u64};
 use crate::communicator::ssh::SshCommunicator;
 use crate::traits::{Artifact, Builder, Communicator};
 
@@ -31,14 +32,6 @@ impl QemuBuilder {
             })),
         }
     }
-}
-
-fn get_str(config: &HashMap<String, Value>, key: &str) -> Option<String> {
-    config.get(key).and_then(|v| v.as_str()).map(String::from)
-}
-
-fn get_u64(config: &HashMap<String, Value>, key: &str) -> Option<u64> {
-    config.get(key).and_then(|v| v.as_u64())
 }
 
 #[async_trait::async_trait]

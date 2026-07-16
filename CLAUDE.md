@@ -86,6 +86,93 @@ Full support for Packer JSON template schema including:
 | Docker | docker exec (bollard) | bollard |
 | QEMU | SSH (russh) | russh, tokio::process |
 | Amazon EBS | SSH (russh) | aws-sdk-ec2 |
+| Amazon Import | None | `ami-forge` (path dep) |
+
+#### Amazon Import (`amazon-import`)
+
+Uploads a **pre-built** Nix disk image (a `nixos-generators` `.raw`/`.img`/`.vhd`
+output — already fully configured, no provisioning step) to S3, imports it as
+an AMI via the `vmimport` service role, tags it, and updates an SSM parameter
+with the resulting AMI ID. This is the amazon-ebs builder's opposite number:
+amazon-ebs launches an instance and provisions it over SSH (the classic Packer
+pattern, kept for Packer-template compatibility); amazon-import never launches
+an instance at all — there is nothing to provision, so [`run()`](src/builder/amazon_import.rs)
+returns no communicator, same as the Null builder. `igata build <template>`
+is the single front door for this pipeline — no separate manual
+`ami-forge build` invocation is needed afterward.
+
+The upload/import/tag/SSM-update sequence is not re-implemented in igata: it
+calls `ami_forge::build::run()` in-process, reusing ami-forge's own proven
+pipeline (path dependency on the sibling `ami-forge` checkout — see
+`Cargo.toml`).
+
+Config fields:
+
+| Field | Required | Default | Meaning |
+|-------|----------|---------|---------|
+| `image` | yes | — | Path to the disk image, or the directory containing it (`*.raw`/`*.img`/`*.vhd`) |
+| `bucket` | yes | — | S3 bucket used for the transit upload (deleted after import) |
+| `ami_name` | yes | — | Constant AMI name — used for rotation (deregister the old AMI with this name) and tagging |
+| `ssm` | yes | — | SSM parameter path updated with the new AMI ID |
+| `region` | no | `us-east-1` | AWS region |
+| `role_name` | no | `<ami_name>-vmimport` | IAM role for the `vmimport` service |
+| `timeout` | no | `1800` | Import-task polling timeout, in seconds |
+
+Example shikumi YAML template:
+
+```yaml
+builders:
+  - type: amazon-import
+    image: /nix/store/.../nixos-camelot-portao.raw
+    bucket: pleme-ami-transit
+    ami_name: camelot-portao
+    ssm: /pleme/camelot/portao/ami-id
+    region: us-east-1
+    timeout: 1800
+```
+
+Equivalent Packer-JSON-shaped template:
+
+```json
+{
+  "builders": [
+    {
+      "type": "amazon-import",
+      "image": "/nix/store/.../nixos-camelot-portao.raw",
+      "bucket": "pleme-ami-transit",
+      "ami_name": "camelot-portao",
+      "ssm": "/pleme/camelot/portao/ami-id",
+      "region": "us-east-1",
+      "timeout": 1800
+    }
+  ]
+}
+```
+
+**Known gap (2026-07-16, tier-honest — do not round up):** `cargo build` /
+`cargo test` are fully green with the `ami-forge` path dependency (28/28 +
+198/198 tests). `gen build .` (the step that regenerates the committed
+`Cargo.gen.lock` delta and feeds `nix build` via IFD) currently fails:
+
+```
+gen: error: failed to read .: gen build (multi-target): spec violates algorithmic invariants (1 issues):
+[{"rule":"unresolved-dep","from":"pleme-igata-0.1.2","dep_name":"ami_forge","missing_key":"ami-forge-0.2.0"}]
+```
+
+`gen` (v0.1.18) does correctly promote a path dependency on a sibling
+git-backed crate to a git-pinned, sha256-fetchable coordinate (it derives
+this from `ami-forge`'s own `repository` field + the checkout's current
+commit — confirmed working once that commit is pushed). The failure is a
+narrower internal key mismatch in its multi-target resolver: it looks the
+promoted dependency up once under the Rust identifier form (`ami_forge`,
+underscored) and once under the Cargo package-name-version form
+(`ami-forge-0.2.0`, hyphenated), and the two don't reconcile. This reproduced
+identically with and without an explicit `[lib]` stanza in `ami-forge`'s
+`Cargo.toml`, so it isn't caused by anything in this repo or in ami-forge —
+it's a `pleme-io/gen` gap, out of scope to patch from here. `Cargo.gen.lock`
+is left untouched (still reflecting the pre-`amazon-import` dependency set)
+rather than hand-edited or force-regenerated; `nix build` for igata is
+consequently unverified until this is fixed upstream in `gen`.
 
 ### Config
 

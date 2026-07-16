@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use crate::builder::get_str;
 use crate::communicator::docker::DockerCommunicator;
 use crate::traits::{Artifact, Builder, Communicator};
 
@@ -33,10 +34,6 @@ impl DockerBuilder {
             })),
         }
     }
-}
-
-fn get_str(config: &HashMap<String, Value>, key: &str) -> Option<String> {
-    config.get(key).and_then(|v| v.as_str()).map(String::from)
 }
 
 #[async_trait::async_trait]

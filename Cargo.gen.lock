@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "52ad05be29f19f42623917fb15d728b73d887f72bd257662a03055c59ed4d8df",
+  "cargo_lock_sha256": "1a4513533fbd3265908cbc80846266499fccd0824f7e2dee4b539a667d2db5ee",
   "manifest_sha256": {
-    "Cargo.toml": "ca299c602176550c47feef406401ae21fc0ede5ce6f09e39f5d2dcc7199f0572"
+    "Cargo.toml": "d05750be02d6c4cb1c4c66090feec880280264bed5267af567c6c5e2c3e290d9"
   },
   "target_resolves": {
     "base": {
@@ -175,7 +175,7 @@
           "alloc"
         ]
       },
-      "ami-forge-0.2.1-f6462b71d567b1fe1234323904808f3ffe6ff830": {
+      "ami-forge-0.2.1": {
         "runtime_dependencies": [
           {
             "name": "anyhow",
@@ -10955,11 +10955,11 @@
         "build_dependencies": [],
         "features": []
       },
-      "pleme-igata-0.1.3": {
+      "pleme-igata-0.1.4": {
         "runtime_dependencies": [
           {
             "name": "ami_forge",
-            "package_key": "ami-forge-0.2.1-f6462b71d567b1fe1234323904808f3ffe6ff830",
+            "package_key": "ami-forge-0.2.1",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -22267,12 +22267,8 @@
     "allocator-api2-0.2.21": {
       "edition": "2018"
     },
-    "ami-forge-0.2.1-f6462b71d567b1fe1234323904808f3ffe6ff830": {
+    "ami-forge-0.2.1": {
       "edition": "2024",
-      "lib_target": {
-        "name": "ami_forge",
-        "path": "src/lib.rs"
-      },
       "binaries": [
         {
           "name": "ami-forge",
@@ -23100,7 +23096,7 @@
     "pkg-config-0.3.33": {
       "edition": "2018"
     },
-    "pleme-igata-0.1.3": {
+    "pleme-igata-0.1.4": {
       "edition": "2021",
       "binaries": [
         {
@@ -23679,8 +23675,6 @@
       "links": "zstd"
     }
   },
-  "git_nar_sha256": {
-    "ami-forge-0.2.1-f6462b71d567b1fe1234323904808f3ffe6ff830": "sha256-+o09KmFokHBi9OBA9fzg74u0gIoHs0yFiZLl6Zt7rM8="
-  },
+  "git_nar_sha256": {},
   "flake_metadata": {}
 }

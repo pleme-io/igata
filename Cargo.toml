@@ -65,7 +65,24 @@ aws-sdk-ec2 = "1"
 # Note the two coordinates are different things: `path` is what a local build
 # compiles against, `version` is what a published consumer resolves. They can
 # drift silently, and only `cargo package` WITHOUT --no-verify catches it.
-ami-forge = { path = "../ami-forge", version = "0.2" }
+# Registry only — NO `path`.
+#
+# A `{ path, version }` dep still requires the path to RESOLVE, even though
+# packaging substitutes the version. On a CI runner there is no sibling
+# checkout, so the release step died with:
+#
+#   failed to get `ami-forge` as a dependency of package `pleme-igata v0.1.4`
+#     failed to load source for dependency `ami-forge`
+#     failed to read `/home/runner/work/igata/ami-forge/Cargo.toml`
+#
+# The path existed for local co-development, which stopped being worth
+# anything the moment ami-forge reached the registry (0.2.1, its first
+# release, 2026-08-07). Keeping it made this crate unshippable a SECOND time,
+# one layer past the missing-version blocker fixed in 15f571e.
+#
+# Re-add a path override in `.cargo/config.toml` or a `[patch]` section if
+# local co-development is ever wanted again — not in the manifest that ships.
+ami-forge = "0.2"
 
 # Post-processors
 sha2 = "0.10"

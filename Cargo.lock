@@ -61,6 +61,8 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 [[package]]
 name = "ami-forge"
 version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d369d01adf1d29f4999c13052f043b9ce4cc10bccdbb46717accdd2dbf5ade2e"
 dependencies = [
  "anyhow",
  "aws-config",
@@ -3009,7 +3011,7 @@ checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
 
 [[package]]
 name = "pleme-igata"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "ami-forge",
  "anyhow",

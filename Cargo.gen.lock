@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
-  "cargo_lock_sha256": "843bb7cd84ab934838922e8dad4db751b43db600026fe304e9286b1e677f0406",
+  "cargo_lock_sha256": "52ad05be29f19f42623917fb15d728b73d887f72bd257662a03055c59ed4d8df",
   "manifest_sha256": {
-    "Cargo.toml": "41e203573a76af8bb056efa4b15e2e2d0c8b20610a17d6fb09a6a818498a9b95"
+    "Cargo.toml": "ca299c602176550c47feef406401ae21fc0ede5ce6f09e39f5d2dcc7199f0572"
   },
   "target_resolves": {
     "base": {
@@ -175,7 +175,7 @@
           "alloc"
         ]
       },
-      "ami-forge-0.2.0-147dfb11293d7d56e7bb54d1daed7639e17cb0d2": {
+      "ami-forge-0.2.1-f6462b71d567b1fe1234323904808f3ffe6ff830": {
         "runtime_dependencies": [
           {
             "name": "anyhow",
@@ -10955,11 +10955,11 @@
         "build_dependencies": [],
         "features": []
       },
-      "pleme-igata-0.1.2": {
+      "pleme-igata-0.1.3": {
         "runtime_dependencies": [
           {
             "name": "ami_forge",
-            "package_key": "ami-forge-0.2.0-147dfb11293d7d56e7bb54d1daed7639e17cb0d2",
+            "package_key": "ami-forge-0.2.1-f6462b71d567b1fe1234323904808f3ffe6ff830",
             "kind": "normal",
             "features": [],
             "uses_default_features": true,
@@ -22267,7 +22267,7 @@
     "allocator-api2-0.2.21": {
       "edition": "2018"
     },
-    "ami-forge-0.2.0-147dfb11293d7d56e7bb54d1daed7639e17cb0d2": {
+    "ami-forge-0.2.1-f6462b71d567b1fe1234323904808f3ffe6ff830": {
       "edition": "2024",
       "lib_target": {
         "name": "ami_forge",
@@ -23100,7 +23100,7 @@
     "pkg-config-0.3.33": {
       "edition": "2018"
     },
-    "pleme-igata-0.1.2": {
+    "pleme-igata-0.1.3": {
       "edition": "2021",
       "binaries": [
         {
@@ -23680,7 +23680,7 @@
     }
   },
   "git_nar_sha256": {
-    "ami-forge-0.2.0-147dfb11293d7d56e7bb54d1daed7639e17cb0d2": "sha256-PusZ9/ijbVumpAoJHibe2EXKeVDEq+Z31r3lSL/9yb0="
+    "ami-forge-0.2.1-f6462b71d567b1fe1234323904808f3ffe6ff830": "sha256-+o09KmFokHBi9OBA9fzg74u0gIoHs0yFiZLl6Zt7rM8="
   },
   "flake_metadata": {}
 }

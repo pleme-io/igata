@@ -45,13 +45,27 @@ aws-config = "1"
 aws-sdk-ec2 = "1"
 
 # amazon-import builder: reuses ami-forge's own proven upload/import/tag/SSM
-# pipeline in-process rather than re-deriving it or shelling out. Path dep
-# against the sibling checkout (matches the fleet convention for real
-# cross-repo composition, e.g. camelot-fabric -> camelot-fabric-startup,
-# australis -> malha) — cargo build/test are offline-clean and byte-
-# reproducible today; publishing ami-forge with a fetchable git/crates.io
-# coordinate for igata's `nix build` is a follow-up, same as those siblings.
-ami-forge = { path = "../ami-forge" }
+# pipeline in-process rather than re-deriving it or shelling out.
+#
+# `version` alongside `path` — and the version is what makes this crate
+# publishable at all. A BARE path dep carries no version requirement, and
+# `cargo package` refuses one outright:
+#
+#   all dependencies must have a version requirement specified when packaging.
+#   dependency `ami-forge` does not specify a version
+#
+# That is why `pleme-igata` has never appeared on crates.io despite having a
+# release shim, zero git deps and a green-looking pipeline — the manifest was
+# structurally unpublishable, and the failure sat in a step nobody read.
+#
+# The comment this replaces called publishing ami-forge "a follow-up". It
+# landed 2026-08-07 (ami-forge 0.2.1, its first release), so the follow-up is
+# now closed rather than restated.
+#
+# Note the two coordinates are different things: `path` is what a local build
+# compiles against, `version` is what a published consumer resolves. They can
+# drift silently, and only `cargo package` WITHOUT --no-verify catches it.
+ami-forge = { path = "../ami-forge", version = "0.2" }
 
 # Post-processors
 sha2 = "0.10"

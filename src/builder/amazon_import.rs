@@ -141,15 +141,21 @@ impl Builder for AmazonImportBuilder {
 mod tests {
     use super::*;
 
+    // The fixture's values, named ONCE. The assertions in
+    // `test_build_args_from_config_defaults_region_and_timeout` read these
+    // consts instead of restating the literals: a restated literal is free to
+    // disagree with the fixture it exists to pin, and that is exactly how a
+    // value drifts through a rename while the test stays green.
+    const FIXTURE_BUCKET: &str = "my-transit-bucket";
+    const FIXTURE_AMI_NAME: &str = "igata-test-image";
+    const FIXTURE_SSM: &str = "/pleme/dev/igata-test-image/ami-id";
+
     fn full_config(image: &str) -> HashMap<String, Value> {
         HashMap::from([
             ("image".into(), Value::String(image.into())),
-            ("bucket".into(), Value::String("my-transit-bucket".into())),
-            ("ami_name".into(), Value::String("igata-portao".into())),
-            (
-                "ssm".into(),
-                Value::String("/pleme/camelot/portao/ami-id".into()),
-            ),
+            ("bucket".into(), Value::String(FIXTURE_BUCKET.into())),
+            ("ami_name".into(), Value::String(FIXTURE_AMI_NAME.into())),
+            ("ssm".into(), Value::String(FIXTURE_SSM.into())),
         ])
     }
 
@@ -216,9 +222,9 @@ mod tests {
         assert_eq!(args.region, "us-east-1");
         assert_eq!(args.timeout, 1800);
         assert!(args.role_name.is_none());
-        assert_eq!(args.bucket, "my-transit-bucket");
-        assert_eq!(args.ami_name, "igata-portao");
-        assert_eq!(args.ssm, "/pleme/camelot/portao/ami-id");
+        assert_eq!(args.bucket, FIXTURE_BUCKET);
+        assert_eq!(args.ami_name, FIXTURE_AMI_NAME);
+        assert_eq!(args.ssm, FIXTURE_SSM);
     }
 
     #[test]

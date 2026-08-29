@@ -123,10 +123,10 @@ Example shikumi YAML template:
 ```yaml
 builders:
   - type: amazon-import
-    image: /nix/store/.../nixos-camelot-portao.raw
+    image: /nix/store/.../nixos-gateway-node.raw
     bucket: pleme-ami-transit
-    ami_name: camelot-portao
-    ssm: /pleme/camelot/portao/ami-id
+    ami_name: gateway-node
+    ssm: /pleme/dev/gateway-node/ami-id
     region: us-east-1
     timeout: 1800
 ```
@@ -138,10 +138,10 @@ Equivalent Packer-JSON-shaped template:
   "builders": [
     {
       "type": "amazon-import",
-      "image": "/nix/store/.../nixos-camelot-portao.raw",
+      "image": "/nix/store/.../nixos-gateway-node.raw",
       "bucket": "pleme-ami-transit",
-      "ami_name": "camelot-portao",
-      "ssm": "/pleme/camelot/portao/ami-id",
+      "ami_name": "gateway-node",
+      "ssm": "/pleme/dev/gateway-node/ami-id",
       "region": "us-east-1",
       "timeout": 1800
     }
